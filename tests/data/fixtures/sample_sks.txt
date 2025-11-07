@@ -1,0 +1,4 @@
+D50  Jernmangelanæmi                                                  2018-01-01          9999-12-312018-01-01          9999-12-31D     001
+D500 Jernmangelanæmi efter blødning                                   2018-01-01          9999-12-312018-01-01          9999-12-31D     002
+D501 Sideropenisk dysfagi                                             2018-01-01          9999-12-312018-01-01          9999-12-31D     003
+D50A Andre jernmangelanæmier                                          2018-01-01          9999-12-312018-01-01          9999-12-31D     004
