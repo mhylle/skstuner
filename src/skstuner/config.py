@@ -18,6 +18,12 @@ class Config:
     openai_api_key: str = field(default_factory=lambda: os.getenv("OPENAI_API_KEY", ""))
     wandb_api_key: str = field(default_factory=lambda: os.getenv("WANDB_API_KEY", ""))
 
+    # Azure OpenAI Configuration
+    azure_openai_api_key: str = field(default_factory=lambda: os.getenv("AZURE_OPENAI_API_KEY", ""))
+    azure_openai_endpoint: str = field(default_factory=lambda: os.getenv("AZURE_OPENAI_ENDPOINT", ""))
+    azure_openai_deployment: str = field(default_factory=lambda: os.getenv("AZURE_OPENAI_DEPLOYMENT", ""))
+    azure_openai_api_version: str = field(default_factory=lambda: os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview"))
+
     # Project settings
     wandb_project: str = field(default_factory=lambda: os.getenv("WANDB_PROJECT", "skstuner"))
     wandb_entity: Optional[str] = field(default_factory=lambda: os.getenv("WANDB_ENTITY"))
