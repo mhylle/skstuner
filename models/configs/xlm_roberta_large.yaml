@@ -1,0 +1,12 @@
+model_name: xlm-roberta-large
+model_type: encoder
+num_labels: 10000  # Will be updated after SKS parsing
+hidden_size: 1024
+learning_rate: 2.0e-05
+batch_size: 16
+num_epochs: 5
+warmup_steps: 1000
+weight_decay: 0.01
+max_length: 512
+gradient_accumulation_steps: 2
+use_lora: false

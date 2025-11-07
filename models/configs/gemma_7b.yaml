@@ -1,0 +1,15 @@
+model_name: google/gemma-7b
+model_type: decoder
+num_labels: 10000  # Will be updated after SKS parsing
+hidden_size: 3072
+learning_rate: 1.0e-04
+batch_size: 4
+num_epochs: 3
+warmup_steps: 500
+weight_decay: 0.01
+max_length: 512
+gradient_accumulation_steps: 8
+use_lora: true
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.05
