@@ -2,6 +2,7 @@
 """Generate synthetic training data"""
 import logging
 import json
+import sys
 from pathlib import Path
 import click
 from skstuner.config import Config
@@ -35,7 +36,7 @@ def main(codes_file: Path, output_file: Path, examples_per_code: int,
 
     if not config.anthropic_api_key:
         logger.error("ANTHROPIC_API_KEY not set in environment")
-        return
+        sys.exit(1)
 
     # Load SKS codes
     logger.info(f"Loading codes from {codes_file}")

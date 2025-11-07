@@ -1,5 +1,5 @@
 """Synthetic clinical note generation using LLMs"""
-from typing import List, Optional
+from typing import List
 import logging
 import re
 from anthropic import Anthropic
@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 
 class SyntheticDataGenerator:
     """Generate synthetic clinical notes using Claude"""
+
+    MIN_NOTE_LENGTH = 20  # Minimum characters to filter out incomplete/empty notes
 
     def __init__(self, api_key: str, model: str = "claude-sonnet-4-20250514"):
         self.client = Anthropic(api_key=api_key)
@@ -55,6 +57,10 @@ class SyntheticDataGenerator:
                 ]
             )
 
+            if not response.content or not hasattr(response.content[0], 'text'):
+                logger.error(f"Unexpected API response format for {code.code}")
+                return []
+
             response_text = response.content[0].text
             examples = self._parse_response(response_text)
 
@@ -83,7 +89,7 @@ class SyntheticDataGenerator:
         notes = [match.strip() for match in matches]
 
         # Filter out empty or very short notes
-        notes = [note for note in notes if len(note) > 20]
+        notes = [note for note in notes if len(note) > self.MIN_NOTE_LENGTH]
 
         return notes
 
