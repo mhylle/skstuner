@@ -36,8 +36,12 @@ class SKSDownloader:
         url = f"{self.SKS_FTP_BASE}{self.SKS_COMPLETE_FILE}"
         logger.info(f"Downloading SKS codes from {url}")
 
-        response = requests.get(url, timeout=30)
-        response.raise_for_status()
+        try:
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to download SKS codes: {e}")
+            raise
 
         output_file.write_bytes(response.content)
         logger.info(f"Downloaded SKS codes to {output_file}")
