@@ -14,7 +14,6 @@ class SKSProcessor:
 
     def __init__(self, codes: List[SKSCode]):
         self.codes = codes
-        self.code_dict = {code.code: code for code in codes}
 
     def export_json(self, output_path: Path):
         """

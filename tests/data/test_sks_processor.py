@@ -49,3 +49,39 @@ def test_processor_filters_by_category(sample_codes):
 
     assert len(d_codes) == 2
     assert all(code.category == 'D' for code in d_codes)
+
+
+def test_processor_exports_taxonomy(tmp_path, sample_codes):
+    """Test that processor exports taxonomy for model training"""
+    processor = SKSProcessor(codes=sample_codes)
+    output_file = tmp_path / "taxonomy.json"
+
+    processor.export_taxonomy(output_file)
+
+    assert output_file.exists()
+
+    with open(output_file) as f:
+        taxonomy = json.load(f)
+
+    # Verify structure
+    assert taxonomy['num_labels'] == 3
+    assert len(taxonomy['label2id']) == 3
+    assert len(taxonomy['id2label']) == 3
+    assert len(taxonomy['descriptions']) == 3
+
+    # Verify categories and levels exist
+    assert 'D' in taxonomy['categories']
+    assert 'K' in taxonomy['categories']
+
+
+def test_processor_filters_by_level(sample_codes):
+    """Test filtering codes by hierarchy level"""
+    processor = SKSProcessor(codes=sample_codes)
+    level_1_codes = processor.filter_by_level(1)
+    level_2_codes = processor.filter_by_level(2)
+
+    assert len(level_1_codes) == 2
+    assert all(code.level == 1 for code in level_1_codes)
+
+    assert len(level_2_codes) == 1
+    assert all(code.level == 2 for code in level_2_codes)
