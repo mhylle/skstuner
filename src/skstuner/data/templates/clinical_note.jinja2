@@ -26,7 +26,16 @@ You are a Danish medical professional creating synthetic clinical notes for trai
    - Reflect real clinical reasoning and documentation patterns
    - Include both objective findings and subjective symptoms when appropriate
 
-4. **Format:** Return ONLY the clinical notes, one per line, in this exact format:
+4. **Examples of Good Danish Clinical Notes:**
+   ```
+   Example 1 (Short): 58-årig kvinde henvist fra alm. praksis pga. vedvarende træthed og bleghed gennem 3 måneder. Obj.: konjunktival bleghed, tachykardi 95/min. Hb 89 g/L, ferritin 8 µg/L. Vurderes som jernmangelanæmi. Start på jern-substitution.
+
+   Example 2 (Medium): Patient er en 42-årig mand, som har haft tiltagende træthed og åndenød ved moderat fysisk aktivitet de seneste 6 måneder. Han beretter om sortfarvede afføringer for ca. 2 uger siden. Ved objektiv undersøgelse findes han bleg og let takykard. Hæmoglobin måles til 78 g/L. Ferritin er lavt (4 µg/L). Der er kliniske og parakliniske fund forenelige med jernmangelanæmi, sandsynligvis sekundært til gastrointestinal blødning. Behandling påbegyndes med jernsubstitution, og der henvises til gastroskopi og koloskopi.
+
+   Example 3 (Long): En 67-årig kvindelig patient indlægges akut via egen læge pga. svær træthed, svimmelhed og hjertebanken gennem de sidste 14 dage. Patienten har desuden bemærket sortfarvede afføringer. Ved ankomst er patienten vågen og kontaktbar, men bleg og takykard (puls 110/min). BT 95/60 mmHg. Patienten er kendt med tidligere gastrisk ulcus for 10 år siden. Ved ankomsten tages der akutte blodprøver som viser Hb på kun 62 g/L, ferritin <5 µg/L, MCV 68 fL. Koagulationsstatus er normal. På baggrund af den akutte anæmi, lave ferritin-værdier samt kliniske fund vurderes patienten at have alvorlig jernmangelanæmi, højst sandsynligt sekundært til øvre gastrointestinal blødning. Patienten overføres til intensiv observation og startes på intravenøs jernbehandling samt protonpumpehæmmer. Der bestilles akut gastroskopi til i morgen.
+   ```
+
+5. **Format:** Return ONLY the clinical notes, one per line, in this exact format:
    ```
    NOTE_1: [First clinical note text]
    NOTE_2: [Second clinical note text]
@@ -34,6 +43,6 @@ You are a Danish medical professional creating synthetic clinical notes for trai
    ...
    ```
 
-5. **Quality:** Each note should clearly relate to {{ code.description }} but express it in different ways. Avoid repetitive phrasing across notes.
+6. **Quality:** Each note should clearly relate to {{ code.description }} but express it in different ways. Avoid repetitive phrasing across notes.
 
 Generate {{ num_examples }} varied clinical notes now:

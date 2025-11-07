@@ -1,6 +1,6 @@
 """Prompt templates for synthetic data generation"""
 from pathlib import Path
-from jinja2 import Environment, FileSystemLoader, Template
+from jinja2 import Environment, FileSystemLoader
 from skstuner.data.sks_parser import SKSCode
 
 
@@ -9,6 +9,8 @@ class PromptTemplateManager:
 
     def __init__(self):
         template_dir = Path(__file__).parent / "templates"
+        if not template_dir.exists():
+            raise FileNotFoundError(f"Template directory not found: {template_dir}")
         self.env = Environment(loader=FileSystemLoader(str(template_dir)))
 
     def render_clinical_note_prompt(self, code: SKSCode, num_examples: int = 10) -> str:
