@@ -50,3 +50,14 @@ def test_build_hierarchy():
     assert "D50" in hierarchy
     assert len(hierarchy["D50"]["children"]) == 2
     assert "D500" in hierarchy["D50"]["children"]
+
+
+def test_determine_levels_correctly():
+    """Test level determination for various code structures"""
+    parser = SKSParser()
+
+    # Test different code lengths map to correct levels
+    assert parser._determine_level("D50") == 1
+    assert parser._determine_level("D500") == 2
+    assert parser._determine_level("D50A") == 2
+    assert parser._determine_level("D500A") == 3

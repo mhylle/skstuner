@@ -2,7 +2,6 @@
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Dict, Optional
-import re
 import logging
 
 logger = logging.getLogger(__name__)
@@ -75,37 +74,28 @@ class SKSParser:
 
     def _determine_level(self, code: str) -> int:
         """Determine hierarchy level from code structure"""
-        # Level 1: D50 (letter + 2 digits)
-        # Level 2: D500 (letter + 3 digits), D50A (letter + 2 digits + letter)
-        # Level 3: D500A (letter + 3 digits + letter)
-        # etc.
+        # Level 1: D50 (3 chars)
+        # Level 2: D500, D50A (4 chars)
+        # Level 3: D500A (5 chars)
+        # Level 4: longer codes
 
         code_clean = code.strip()
-        non_space_len = len(code_clean.replace(' ', ''))
+        code_len = len(code_clean)
 
-        # Count how many times we transition between digit/letter
-        transitions = 0
-        prev_char_type = None
-
-        for char in code_clean:
-            if char == ' ':
-                continue
-            char_type = 'digit' if char.isdigit() else 'letter'
-            if prev_char_type and char_type != prev_char_type:
-                transitions += 1
-            prev_char_type = char_type
-
-        # Level is determined by number of transitions
-        # 1 transition: Level 1 (e.g., D50: letter->digit)
-        # 2 transitions: Level 2 (e.g., D500 or D50A: letter->digit->digit/letter)
-        # 3 transitions: Level 3 (e.g., D500A: letter->digit->digit->letter)
-        return transitions
+        if code_len <= 3:
+            return 1
+        elif code_len == 4:
+            return 2
+        elif code_len == 5:
+            return 3
+        else:
+            return 4
 
     def _determine_parent(self, code: str) -> Optional[str]:
         """Determine parent code from code structure"""
         code_clean = code.strip()
 
-        if len(code_clean) <= 2:
+        if len(code_clean) <= 3:
             return None  # Top level
 
         # Parent is code with last character removed
