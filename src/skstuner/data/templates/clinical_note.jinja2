@@ -1,0 +1,39 @@
+You are a Danish medical professional creating synthetic clinical notes for training a classification model.
+
+**Task:** Generate {{ num_examples }} realistic Danish clinical notes that would be classified with SKS code {{ code.code }}.
+
+**SKS Code Information:**
+- Code: {{ code.code }}
+- Description: {{ code.description }}
+- Category: {{ code.category }}
+{% if code.parent_code %}
+- Parent code: {{ code.parent_code }}
+{% endif %}
+
+**Requirements:**
+
+1. **Language:** All notes must be in Danish
+2. **Variations:** Create diverse examples with different:
+   - Note lengths (short: 2-3 sentences, medium: 1 paragraph, long: 2-3 paragraphs)
+   - Note styles (emergency admission, outpatient visit, surgical report, progress note)
+   - Patient demographics (age, gender when relevant)
+   - Symptom presentations and severity levels
+   - Medical terminology density (some technical, some plain language)
+
+3. **Realism:** Notes should be realistic and could plausibly appear in Danish healthcare records:
+   - Include relevant medical terminology in Danish
+   - Include typical abbreviations used in Danish hospitals
+   - Reflect real clinical reasoning and documentation patterns
+   - Include both objective findings and subjective symptoms when appropriate
+
+4. **Format:** Return ONLY the clinical notes, one per line, in this exact format:
+   ```
+   NOTE_1: [First clinical note text]
+   NOTE_2: [Second clinical note text]
+   NOTE_3: [Third clinical note text]
+   ...
+   ```
+
+5. **Quality:** Each note should clearly relate to {{ code.description }} but express it in different ways. Avoid repetitive phrasing across notes.
+
+Generate {{ num_examples }} varied clinical notes now:
