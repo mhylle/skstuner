@@ -1,5 +1,4 @@
 import pytest
-from pathlib import Path
 from skstuner.data.sks_parser import SKSParser, SKSCode
 
 
@@ -9,7 +8,7 @@ def sample_sks_file(tmp_path):
     sample_file = tmp_path / "sample_sks.txt"
     sample_content = """D50  Jernmangelanæmi                                                  2018-01-01          9999-12-312018-01-01          9999-12-31D     001
 D500 Jernmangelanæmi efter blødning                                   2018-01-01          9999-12-312018-01-01          9999-12-31D     002                          """
-    sample_file.write_text(sample_content, encoding='latin-1')
+    sample_file.write_text(sample_content, encoding="latin-1")
     return sample_file
 
 
@@ -40,8 +39,20 @@ def test_build_hierarchy():
     """Test building code hierarchy"""
     codes = [
         SKSCode(code="D50", description="Jernmangelanæmi", category="D", level=1, parent_code=None),
-        SKSCode(code="D500", description="Jernmangelanæmi efter blødning", category="D", level=2, parent_code="D50"),
-        SKSCode(code="D501", description="Sideropenisk dysfagi", category="D", level=2, parent_code="D50"),
+        SKSCode(
+            code="D500",
+            description="Jernmangelanæmi efter blødning",
+            category="D",
+            level=2,
+            parent_code="D50",
+        ),
+        SKSCode(
+            code="D501",
+            description="Sideropenisk dysfagi",
+            category="D",
+            level=2,
+            parent_code="D50",
+        ),
     ]
 
     parser = SKSParser()
