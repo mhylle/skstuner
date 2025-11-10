@@ -5,18 +5,20 @@ Data processing and synthetic data generation system for Danish SKS (Sundhedsvæ
 ## Current Status
 
 **Phase 1: Data Pipeline** ✓ Complete
+**Phase 2: Model Training** ✓ Complete
 
-This project currently implements the data ingestion and synthetic data generation pipeline for SKS classification codes. The following modules are **implemented and production-ready**:
+This project implements end-to-end data processing and model training for SKS classification codes. The following modules are **implemented and production-ready**:
 
 - ✓ SKS code downloading and parsing
 - ✓ Data processing and export
-- ✓ Synthetic clinical note generation using Claude AI
+- ✓ Synthetic clinical note generation using Claude AI or Ollama
+- ✓ Model training pipeline with support for multiple architectures
+- ✓ LoRA/PEFT support for efficient fine-tuning
+- ✓ Comprehensive evaluation metrics
 - ✓ Comprehensive test suite
 - ✓ CLI scripts for all operations
 
 **Planned Features** (Not Yet Implemented):
-- Model training pipeline
-- Evaluation metrics
 - FastAPI inference service
 
 ## Features
@@ -27,6 +29,10 @@ This project currently implements the data ingestion and synthetic data generati
 - **Multiple LLM Providers**: Support for both Claude AI and Ollama (local models)
 - **Checkpoint & Resume**: Automatic checkpointing with ability to resume interrupted generation
 - **Quality Validation**: Comprehensive quality metrics and filtering for generated data
+- **Model Training**: Complete training pipeline for SKS code classification
+- **Multiple Architectures**: Support for XLM-RoBERTa, Phi-3, Gemma, and other models
+- **LoRA/PEFT**: Efficient fine-tuning with Parameter-Efficient Fine-Tuning
+- **Comprehensive Metrics**: Detailed evaluation with precision, recall, F1, and top-k accuracy
 - **Production-Ready**: Comprehensive error handling, logging, and validation
 - **Type-Safe**: Full type hints throughout the codebase
 - **Well-Tested**: Unit tests with mocking for external services
@@ -94,23 +100,35 @@ skstuner/
 │   │   ├── sks_parser.py       # Parse SKS format
 │   │   ├── sks_processor.py    # Process and export
 │   │   ├── synthetic_generator.py  # Generate synthetic data
-│   │   └── prompt_templates.py     # LLM prompt templates
+│   │   ├── prompt_templates.py     # LLM prompt templates
+│   │   ├── llm_providers.py        # LLM provider abstraction
+│   │   ├── checkpoint_manager.py   # Checkpoint handling
+│   │   └── quality_validator.py    # Data quality validation
+│   ├── training/          # Model training modules
+│   │   ├── dataset.py     # Dataset preparation
+│   │   ├── model.py       # Model creation and loading
+│   │   ├── trainer.py     # Training loop
+│   │   └── metrics.py     # Evaluation metrics
 │   ├── utils/             # Utility modules
 │   │   └── logging_config.py  # Centralized logging
 │   └── config.py          # Configuration management
 ├── tests/                 # Test suite
 │   ├── data/             # Data module tests
+│   ├── training/         # Training module tests
 │   └── test_config.py    # Config tests
 ├── scripts/              # CLI scripts
 │   ├── download_sks.py
 │   ├── process_sks.py
-│   └── generate_synthetic_data.py
+│   ├── generate_synthetic_data.py
+│   ├── validate_synthetic_data.py
+│   └── train_model.py    # Model training script
 ├── data/                 # Data storage
 │   ├── raw/             # Downloaded SKS files
 │   ├── processed/       # Processed JSON files
 │   └── synthetic/       # Generated synthetic data
-├── models/              # Model configurations
-│   └── configs/         # YAML config files
+├── models/              # Model storage
+│   ├── configs/         # YAML config files
+│   └── trained/         # Trained model checkpoints
 └── docs/                # Documentation
 ```
 
@@ -194,6 +212,94 @@ python scripts/validate_synthetic_data.py \
     --quality-threshold 0.6
 ```
 
+### Train Classification Model
+
+**Prerequisites:**
+1. Install training dependencies: `poetry install`
+2. Generate or prepare synthetic training data
+
+**Available Model Configurations:**
+- `models/configs/xlm_roberta_large.yaml` - Encoder model (XLM-RoBERTa)
+- `models/configs/phi3_mini.yaml` - Decoder model with LoRA (Phi-3)
+- `models/configs/gemma_7b.yaml` - Decoder model with LoRA (Gemma)
+
+**Quick Start (using shell script):**
+```bash
+# Train XLM-RoBERTa (default)
+./train-model.sh
+
+# Train Phi-3 with LoRA
+./train-model.sh --phi3
+
+# Train Gemma with LoRA
+./train-model.sh --gemma
+```
+
+**Basic Training (using Python script directly):**
+```bash
+# Train XLM-RoBERTa on synthetic data
+python scripts/train_model.py \
+    --data-file data/synthetic/train_data.json \
+    --config models/configs/xlm_roberta_large.yaml \
+    --output-dir models/trained/xlm_roberta
+
+# Train Phi-3 with LoRA (memory efficient)
+python scripts/train_model.py \
+    --data-file data/synthetic/train_data.json \
+    --config models/configs/phi3_mini.yaml \
+    --output-dir models/trained/phi3
+
+# Train Gemma with LoRA
+python scripts/train_model.py \
+    --data-file data/synthetic/train_data.json \
+    --config models/configs/gemma_7b.yaml \
+    --output-dir models/trained/gemma
+```
+
+**Advanced Training Options:**
+```bash
+# Custom hyperparameters
+python scripts/train_model.py \
+    --data-file data/synthetic/train_data.json \
+    --config models/configs/xlm_roberta_large.yaml \
+    --output-dir models/trained/xlm_roberta_custom \
+    --batch-size 8 \
+    --learning-rate 3e-5 \
+    --num-epochs 5 \
+    --max-length 256
+
+# Custom train/validation/test split
+python scripts/train_model.py \
+    --data-file data/synthetic/train_data.json \
+    --config models/configs/phi3_mini.yaml \
+    --output-dir models/trained/phi3 \
+    --test-size 0.15 \
+    --val-size 0.1
+
+# Use cached models to save download time
+python scripts/train_model.py \
+    --data-file data/synthetic/train_data.json \
+    --config models/configs/xlm_roberta_large.yaml \
+    --output-dir models/trained/xlm_roberta \
+    --cache-dir models/cache
+```
+
+**Training Output:**
+After training completes, you'll find:
+- `models/trained/<model_name>/final_model/` - Final trained model
+- `models/trained/<model_name>/checkpoints/` - Training checkpoints
+- `models/trained/<model_name>/test_metrics.json` - Detailed evaluation metrics
+- `models/trained/<model_name>/label_mapping.json` - SKS code to ID mappings
+- `models/trained/<model_name>/training_config.json` - Training configuration
+
+**Evaluation Metrics:**
+The training script provides comprehensive metrics:
+- Top-1 and Top-K accuracy
+- Weighted and macro-averaged precision, recall, F1
+- Per-class performance
+- Best and worst performing classes
+- Full classification report
+
 ## Development
 
 ```bash
@@ -276,14 +382,50 @@ validator = QualityValidator(
 )
 ```
 
+## Model Architectures
+
+The training pipeline supports multiple model architectures optimized for different use cases:
+
+### XLM-RoBERTa Large (Encoder Model)
+- **Best for**: High accuracy, multilingual understanding
+- **Model size**: ~560M parameters
+- **Memory**: ~8GB GPU RAM (training)
+- **Speed**: Fast inference
+- **Configuration**: `models/configs/xlm_roberta_large.yaml`
+- **Use case**: Production deployments where accuracy is critical
+
+### Phi-3 Mini (Decoder Model with LoRA)
+- **Best for**: Balanced performance and efficiency
+- **Model size**: ~3.8B parameters (only ~50M trained with LoRA)
+- **Memory**: ~12GB GPU RAM (with LoRA)
+- **Speed**: Moderate inference
+- **Configuration**: `models/configs/phi3_mini.yaml`
+- **Use case**: Resource-constrained environments
+
+### Gemma 7B (Decoder Model with LoRA)
+- **Best for**: Maximum capability
+- **Model size**: ~7B parameters (only ~50M trained with LoRA)
+- **Memory**: ~20GB GPU RAM (with LoRA)
+- **Speed**: Slower inference
+- **Configuration**: `models/configs/gemma_7b.yaml`
+- **Use case**: Research and experimentation
+
+### LoRA (Low-Rank Adaptation)
+LoRA enables efficient fine-tuning by only training a small number of parameters:
+- Reduces memory requirements by 3-4x
+- Faster training times
+- Maintains model quality
+- Enabled by default for decoder models (Phi-3, Gemma)
+
 ## Contributing
 
 Contributions are welcome! Areas for contribution:
 
-1. **Model Training Pipeline**: Implement training for XLM-RoBERTa, Gemma, or Phi-3
-2. **Evaluation Metrics**: Add comprehensive evaluation for multi-label classification
-3. **API Service**: Create FastAPI inference endpoint
-4. **Additional Tests**: Expand test coverage for edge cases
+1. **API Service**: Create FastAPI inference endpoint with model serving
+2. **Additional Tests**: Expand test coverage for edge cases
+3. **Model Optimization**: Quantization and optimization for production
+4. **Additional Architectures**: Add support for more models (LLaMA, Mistral, etc.)
+5. **Data Augmentation**: Implement data augmentation strategies
 
 ## License
 
