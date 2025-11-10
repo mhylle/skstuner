@@ -1,11 +1,13 @@
 """Synthetic clinical note generation using LLMs"""
 
-from typing import List, Dict
+from typing import List, Dict, Optional
 import logging
 import re
 from anthropic import Anthropic, APIError
 from skstuner.data.sks_parser import SKSCode
 from skstuner.data.prompt_templates import PromptTemplateManager
+from skstuner.data.checkpoint_manager import CheckpointManager
+from skstuner.data.quality_validator import QualityValidator
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +45,11 @@ class SyntheticDataGenerator:
         self.template_manager = PromptTemplateManager()
 
     def generate_for_code(
-        self, code: SKSCode, num_examples: int = 10, max_tokens: int = DEFAULT_MAX_TOKENS
+        self,
+        code: SKSCode,
+        num_examples: int = 10,
+        max_tokens: int = DEFAULT_MAX_TOKENS,
+        quality_validator: Optional[QualityValidator] = None,
     ) -> List[str]:
         """
         Generate synthetic clinical notes for a SKS code
@@ -52,6 +58,7 @@ class SyntheticDataGenerator:
             code: SKS code to generate examples for
             num_examples: Number of examples to generate
             max_tokens: Maximum tokens in response
+            quality_validator: Optional quality validator to filter examples
 
         Returns:
             List of generated clinical note texts
@@ -93,6 +100,26 @@ class SyntheticDataGenerator:
             response_text = response.content[0].text
             examples = self._parse_response(response_text)
 
+            # Apply quality validation if provided
+            if quality_validator:
+                validated_examples = []
+                rejected_count = 0
+                for example in examples:
+                    quality = quality_validator.validate(example, code.description)
+                    if quality.passed:
+                        validated_examples.append(example)
+                    else:
+                        rejected_count += 1
+                        logger.debug(
+                            f"Rejected example for {code.code}: {quality.issues}"
+                        )
+                examples = validated_examples
+                if rejected_count > 0:
+                    logger.info(
+                        f"Quality filter: kept {len(examples)}/{len(examples) + rejected_count} "
+                        f"examples for {code.code}"
+                    )
+
             logger.info(f"Generated {len(examples)} valid examples for {code.code}")
             return examples
 
@@ -133,6 +160,9 @@ class SyntheticDataGenerator:
         examples_per_code: int = 10,
         batch_size: int = 10,
         continue_on_error: bool = True,
+        checkpoint_manager: Optional[CheckpointManager] = None,
+        checkpoint_interval: int = 5,
+        quality_validator: Optional[QualityValidator] = None,
     ) -> List[Dict]:
         """
         Generate complete dataset for list of codes
@@ -142,6 +172,9 @@ class SyntheticDataGenerator:
             examples_per_code: Number of examples per code
             batch_size: Number of codes to process before logging
             continue_on_error: If True, continue processing on errors; if False, raise
+            checkpoint_manager: Optional checkpoint manager for resume capability
+            checkpoint_interval: Save checkpoint every N codes processed
+            quality_validator: Optional quality validator to filter examples
 
         Returns:
             List of examples with format [{"text": "...", "label": "D50"}, ...]
@@ -156,36 +189,80 @@ class SyntheticDataGenerator:
             raise ValueError(f"examples_per_code must be positive, got {examples_per_code}")
         if batch_size <= 0:
             raise ValueError(f"batch_size must be positive, got {batch_size}")
+        if checkpoint_interval <= 0:
+            raise ValueError(f"checkpoint_interval must be positive, got {checkpoint_interval}")
 
-        dataset = []
+        # Load existing dataset from checkpoint if available
+        if checkpoint_manager:
+            dataset = checkpoint_manager.dataset.copy()
+            # Filter out codes that are already processed
+            codes_to_process = [
+                code for code in codes if not checkpoint_manager.is_code_processed(code.code)
+            ]
+            if codes_to_process:
+                logger.info(
+                    f"Resuming from checkpoint: {len(codes) - len(codes_to_process)} "
+                    f"codes already processed, {len(codes_to_process)} remaining"
+                )
+            codes = codes_to_process
+        else:
+            dataset = []
+
         failed_codes = []
+        codes_processed_since_checkpoint = 0
 
         for i, code in enumerate(codes):
             try:
-                examples = self.generate_for_code(code, num_examples=examples_per_code)
+                examples = self.generate_for_code(
+                    code, num_examples=examples_per_code, quality_validator=quality_validator
+                )
 
                 for example in examples:
-                    dataset.append(
-                        {
-                            "text": example,
-                            "label": code.code,
-                            "description": code.description,
-                            "category": code.category,
-                            "level": code.level,
-                        }
+                    example_data = {
+                        "text": example,
+                        "label": code.code,
+                        "description": code.description,
+                        "category": code.category,
+                        "level": code.level,
+                    }
+                    dataset.append(example_data)
+
+                # Mark code as processed in checkpoint
+                if checkpoint_manager:
+                    checkpoint_manager.mark_code_processed(code.code)
+                    checkpoint_manager.add_examples(
+                        [
+                            example_data
+                            for example_data in dataset[-len(examples) :]  # Only new examples
+                        ]
                     )
+                    codes_processed_since_checkpoint += 1
 
             except SyntheticDataGenerationError as e:
                 logger.error(f"Failed to generate examples for {code.code}: {e}")
                 failed_codes.append(code.code)
+
+                # Mark as failed in checkpoint
+                if checkpoint_manager:
+                    checkpoint_manager.mark_code_failed(code.code)
+
                 if not continue_on_error:
                     raise
+
+            # Save checkpoint periodically
+            if checkpoint_manager and codes_processed_since_checkpoint >= checkpoint_interval:
+                checkpoint_manager.save()
+                codes_processed_since_checkpoint = 0
 
             if (i + 1) % batch_size == 0:
                 logger.info(
                     f"Progress: {i + 1}/{len(codes)} codes processed, "
                     f"{len(dataset)} total examples, {len(failed_codes)} failures"
                 )
+
+        # Save final checkpoint
+        if checkpoint_manager:
+            checkpoint_manager.save()
 
         logger.info(
             f"Dataset generation complete: {len(dataset)} examples from {len(codes)} codes. "
