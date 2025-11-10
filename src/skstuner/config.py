@@ -1,4 +1,5 @@
 """Configuration management for SKS Tuner"""
+
 from pathlib import Path
 from typing import Optional
 import os
@@ -28,7 +29,8 @@ class Config:
     models_dir: Path = field(init=False)
     logs_dir: Path = field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
+        """Initialize computed fields and create necessary directories"""
         self.data_dir = self.root_dir / "data"
         self.models_dir = self.root_dir / "models"
         self.logs_dir = self.root_dir / "logs"
@@ -40,6 +42,23 @@ class Config:
         (self.data_dir / "raw").mkdir(exist_ok=True)
         (self.data_dir / "processed").mkdir(exist_ok=True)
         (self.data_dir / "synthetic").mkdir(exist_ok=True)
+
+    def validate_api_key(self, key_name: str) -> None:
+        """
+        Validate that a required API key is set
+
+        Args:
+            key_name: Name of the API key field to validate
+
+        Raises:
+            ValueError: If the API key is not set or is empty
+        """
+        key_value = getattr(self, key_name, "")
+        if not key_value or key_value.strip() == "":
+            raise ValueError(
+                f"{key_name.upper()} is not set. "
+                f"Please set it in your .env file or environment variables."
+            )
 
 
 @dataclass
@@ -64,9 +83,30 @@ class ModelConfig:
 
     @classmethod
     def from_yaml(cls, path: Path) -> "ModelConfig":
-        """Load model config from YAML file"""
-        with open(path, "r") as f:
-            config_dict = yaml.safe_load(f)
+        """
+        Load model config from YAML file
+
+        Args:
+            path: Path to YAML configuration file
+
+        Returns:
+            ModelConfig instance
+
+        Raises:
+            FileNotFoundError: If config file doesn't exist
+            ValueError: If YAML is malformed or missing required fields
+        """
+        if not path.exists():
+            raise FileNotFoundError(f"Model config file not found: {path}")
+
+        try:
+            with open(path, "r") as f:
+                config_dict = yaml.safe_load(f)
+        except yaml.YAMLError as e:
+            raise ValueError(f"Invalid YAML in config file {path}: {e}")
+
+        if not config_dict:
+            raise ValueError(f"Empty config file: {path}")
 
         # Convert learning_rate to float if it's a string
         if "learning_rate" in config_dict and isinstance(config_dict["learning_rate"], str):
@@ -74,7 +114,13 @@ class ModelConfig:
 
         return cls(**config_dict)
 
-    def to_yaml(self, path: Path):
-        """Save model config to YAML file"""
+    def to_yaml(self, path: Path) -> None:
+        """
+        Save model config to YAML file
+
+        Args:
+            path: Path where to save the configuration
+        """
+        path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "w") as f:
             yaml.dump(self.__dict__, f, default_flow_style=False)

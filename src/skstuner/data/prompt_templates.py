@@ -1,4 +1,5 @@
 """Prompt templates for synthetic data generation"""
+
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 from skstuner.data.sks_parser import SKSCode
@@ -26,7 +27,4 @@ class PromptTemplateManager:
         """
         template = self.env.get_template("clinical_note.jinja2")
 
-        return template.render(
-            code=code,
-            num_examples=num_examples
-        )
+        return template.render(code=code, num_examples=num_examples)

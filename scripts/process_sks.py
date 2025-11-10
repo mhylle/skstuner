@@ -6,17 +6,25 @@ import click
 from skstuner.data.sks_parser import SKSParser
 from skstuner.data.sks_processor import SKSProcessor
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
 @click.command()
-@click.option('--input-file', type=click.Path(exists=True, path_type=Path),
-              default=Path("data/raw/SKScomplete.txt"),
-              help='Input SKS file')
-@click.option('--output-dir', type=click.Path(path_type=Path),
-              default=Path("data/processed"),
-              help='Output directory')
+@click.option(
+    "--input-file",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("data/raw/SKScomplete.txt"),
+    help="Input SKS file",
+)
+@click.option(
+    "--output-dir",
+    type=click.Path(path_type=Path),
+    default=Path("data/processed"),
+    help="Output directory",
+)
 def main(input_file: Path, output_dir: Path):
     """Process SKS codes and export to JSON formats"""
     logger.info(f"Processing SKS codes from {input_file}")

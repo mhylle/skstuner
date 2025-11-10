@@ -1,4 +1,5 @@
 """Process and export SKS codes"""
+
 from pathlib import Path
 from typing import List, Dict
 import json
@@ -23,23 +24,23 @@ class SKSProcessor:
             output_path: Path to output JSON file
         """
         data = {
-            'total_codes': len(self.codes),
-            'codes': [
+            "total_codes": len(self.codes),
+            "codes": [
                 {
-                    'code': code.code,
-                    'description': code.description,
-                    'category': code.category,
-                    'level': code.level,
-                    'parent_code': code.parent_code,
-                    'children': code.children
+                    "code": code.code,
+                    "description": code.description,
+                    "category": code.category,
+                    "level": code.level,
+                    "parent_code": code.parent_code,
+                    "children": code.children,
                 }
                 for code in self.codes
-            ]
+            ],
         }
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
         logger.info(f"Exported {len(self.codes)} codes to {output_path}")
@@ -52,7 +53,9 @@ class SKSProcessor:
             output_path: Path to output JSON file
         """
         # Create label to ID mapping
-        label2id = {code.code: idx for idx, code in enumerate(sorted(self.codes, key=lambda x: x.code))}
+        label2id = {
+            code.code: idx for idx, code in enumerate(sorted(self.codes, key=lambda x: x.code))
+        }
         id2label = {idx: code for code, idx in label2id.items()}
 
         # Create category to labels mapping
@@ -66,17 +69,17 @@ class SKSProcessor:
             level_labels[code.level].append(code.code)
 
         taxonomy = {
-            'num_labels': len(self.codes),
-            'label2id': label2id,
-            'id2label': id2label,
-            'categories': dict(category_labels),
-            'levels': {str(k): v for k, v in level_labels.items()},
-            'descriptions': {code.code: code.description for code in self.codes}
+            "num_labels": len(self.codes),
+            "label2id": label2id,
+            "id2label": id2label,
+            "categories": dict(category_labels),
+            "levels": {str(k): v for k, v in level_labels.items()},
+            "descriptions": {code.code: code.description for code in self.codes},
         }
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             json.dump(taxonomy, f, ensure_ascii=False, indent=2)
 
         logger.info(f"Exported taxonomy to {output_path}")
@@ -96,10 +99,10 @@ class SKSProcessor:
             level_counts[code.level] += 1
 
         return {
-            'total_codes': len(self.codes),
-            'categories': dict(category_counts),
-            'levels': dict(level_counts),
-            'top_level_codes': len([c for c in self.codes if c.level == 1])
+            "total_codes": len(self.codes),
+            "categories": dict(category_counts),
+            "levels": dict(level_counts),
+            "top_level_codes": len([c for c in self.codes if c.level == 1]),
         }
 
     def filter_by_category(self, category: str) -> List[SKSCode]:

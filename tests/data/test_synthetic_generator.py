@@ -7,12 +7,16 @@ from skstuner.data.sks_parser import SKSCode
 @pytest.fixture
 def mock_anthropic_client():
     """Mock Anthropic client"""
-    with patch('skstuner.data.synthetic_generator.Anthropic') as mock:
+    with patch("skstuner.data.synthetic_generator.Anthropic") as mock:
         mock_client = Mock()
         mock_response = Mock()
-        mock_response.content = [Mock(text="""NOTE_1: Patient har jernmangelanæmi
+        mock_response.content = [
+            Mock(
+                text="""NOTE_1: Patient har jernmangelanæmi
 NOTE_2: Kvindelig patient med anæmi pga jerntab
-NOTE_3: Diagnosticeret med jernmangel efter blodprøver""")]
+NOTE_3: Diagnosticeret med jernmangel efter blodprøver"""
+            )
+        ]
         mock_client.messages.create.return_value = mock_response
         mock.return_value = mock_client
         yield mock
@@ -26,10 +30,10 @@ def test_generator_generates_examples(mock_anthropic_client):
     examples = generator.generate_for_code(code, num_examples=3)
 
     assert len(examples) == 3
-    assert all('jernmangel' in ex.lower() or 'anæmi' in ex.lower() for ex in examples)
+    assert all("jernmangel" in ex.lower() or "anæmi" in ex.lower() for ex in examples)
 
 
-def test_generator_parses_response_format():
+def test_generator_parses_response_format(mock_anthropic_client):
     """Test that generator correctly parses NOTE_N format"""
     response_text = """NOTE_1: First note with enough characters to pass filter
 NOTE_2: Second note with enough characters to pass filter
