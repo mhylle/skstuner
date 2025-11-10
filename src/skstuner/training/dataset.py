@@ -163,17 +163,41 @@ def prepare_datasets(
     # Get DataFrame
     df = sks_dataset.to_dataframe()
 
+    # Check if we have enough samples for stratified splitting
+    # Need at least 2 samples per class for stratification
+    min_samples_per_class = df["label_id"].value_counts().min()
+    use_stratify = min_samples_per_class >= 2
+
+    if not use_stratify:
+        logger.warning(
+            f"Insufficient samples per class (min={min_samples_per_class}) for stratified splitting. "
+            "Using random split instead."
+        )
+
     # Split into train+val and test
     train_val_df, test_df = train_test_split(
-        df, test_size=test_size, random_state=random_state, stratify=df["label_id"]
+        df,
+        test_size=test_size,
+        random_state=random_state,
+        stratify=df["label_id"] if use_stratify else None
     )
+
+    # Check again for the second split
+    min_samples_train_val = train_val_df["label_id"].value_counts().min()
+    use_stratify_val = min_samples_train_val >= 2
+
+    if not use_stratify_val:
+        logger.warning(
+            f"Insufficient samples per class (min={min_samples_train_val}) in train+val for stratified splitting. "
+            "Using random split instead."
+        )
 
     # Split train+val into train and val
     train_df, val_df = train_test_split(
         train_val_df,
         test_size=val_size,
         random_state=random_state,
-        stratify=train_val_df["label_id"],
+        stratify=train_val_df["label_id"] if use_stratify_val else None,
     )
 
     logger.info(

@@ -92,11 +92,11 @@ def test_compute_detailed_metrics(sample_predictions, id_to_label):
 
 def test_top_k_accuracy(id_to_label):
     """Test top-k accuracy computation."""
-    # Create predictions where top-1 is wrong but top-3 includes correct label
+    # Create predictions where top-1 is wrong but top-2 includes correct label
     predictions = np.array(
         [
-            [0.2, 0.5, 0.3],  # Top-1: 1, Top-2: [1,2], Label: 0 - wrong
-            [0.3, 0.4, 0.3],  # Top-1: 1, Top-2: [1,0], Label: 1 - correct
+            [0.4, 0.5, 0.3],  # Top-1: 1, Top-2: [1,0], Label: 0 - wrong for top-1, correct for top-2
+            [0.3, 0.4, 0.3],  # Top-1: 1, Top-2: [1,0 or 1,2], Label: 1 - correct for both
         ]
     )
     labels = np.array([0, 1])
