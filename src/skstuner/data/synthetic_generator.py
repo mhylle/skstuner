@@ -3,17 +3,16 @@
 from typing import List, Dict, Optional
 import logging
 import re
-from anthropic import Anthropic, APIError
 from skstuner.data.sks_parser import SKSCode
 from skstuner.data.prompt_templates import PromptTemplateManager
 from skstuner.data.checkpoint_manager import CheckpointManager
 from skstuner.data.quality_validator import QualityValidator
+from skstuner.data.llm_providers import LLMProvider
 
 logger = logging.getLogger(__name__)
 
 # Constants
 MIN_NOTE_LENGTH = 20  # Minimum characters to filter out incomplete/empty notes
-DEFAULT_MODEL = "claude-sonnet-4-20250514"
 DEFAULT_MAX_TOKENS = 4000
 
 
@@ -24,25 +23,24 @@ class SyntheticDataGenerationError(Exception):
 
 
 class SyntheticDataGenerator:
-    """Generate synthetic clinical notes using Claude"""
+    """Generate synthetic clinical notes using LLMs"""
 
-    def __init__(self, api_key: str, model: str = DEFAULT_MODEL):
+    def __init__(self, provider: LLMProvider):
         """
         Initialize the synthetic data generator
 
         Args:
-            api_key: Anthropic API key
-            model: Claude model to use for generation
+            provider: LLM provider instance (ClaudeProvider or OllamaProvider)
 
         Raises:
-            ValueError: If API key is empty or invalid
+            ValueError: If provider is None
         """
-        if not api_key or not api_key.strip():
-            raise ValueError("API key cannot be empty")
+        if provider is None:
+            raise ValueError("Provider cannot be None")
 
-        self.client = Anthropic(api_key=api_key)
-        self.model = model
+        self.provider = provider
         self.template_manager = PromptTemplateManager()
+        logger.info(f"Initialized SyntheticDataGenerator with provider: {provider.get_model_name()}")
 
     def generate_for_code(
         self,
@@ -84,20 +82,9 @@ class SyntheticDataGenerator:
                 f"Failed to render prompt template for {code.code}: {e}"
             ) from e
 
-        # Call Claude API
+        # Call LLM provider
         try:
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=max_tokens,
-                messages=[{"role": "user", "content": prompt}],
-            )
-
-            if not response.content or not hasattr(response.content[0], "text"):
-                raise SyntheticDataGenerationError(
-                    f"Unexpected API response format for {code.code}. " f"Response: {response}"
-                )
-
-            response_text = response.content[0].text
+            response_text = self.provider.generate(prompt=prompt, max_tokens=max_tokens)
             examples = self._parse_response(response_text)
 
             # Apply quality validation if provided
@@ -123,13 +110,9 @@ class SyntheticDataGenerator:
             logger.info(f"Generated {len(examples)} valid examples for {code.code}")
             return examples
 
-        except APIError as e:
-            raise SyntheticDataGenerationError(
-                f"Anthropic API error while generating examples for {code.code}: {e}"
-            ) from e
         except Exception as e:
             raise SyntheticDataGenerationError(
-                f"Unexpected error generating examples for {code.code}: {e}"
+                f"LLM provider error while generating examples for {code.code}: {e}"
             ) from e
 
     def _parse_response(self, response_text: str) -> List[str]:
