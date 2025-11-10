@@ -10,6 +10,7 @@ from skstuner.data.sks_parser import SKSCode
 from skstuner.data.synthetic_generator import SyntheticDataGenerator
 from skstuner.data.checkpoint_manager import CheckpointManager
 from skstuner.data.quality_validator import QualityValidator, calculate_diversity_metrics
+from skstuner.data.llm_providers import create_provider
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -70,6 +71,12 @@ logger = logging.getLogger(__name__)
     default=True,
     help="Show detailed quality report after generation (default: True)",
 )
+@click.option(
+    "--provider",
+    type=click.Choice(["claude", "ollama"], case_sensitive=False),
+    default=None,
+    help="LLM provider to use (default: from config/env, fallback to claude)",
+)
 def main(
     codes_file: Path,
     output_file: Path,
@@ -82,6 +89,7 @@ def main(
     enable_quality_filter: bool,
     quality_threshold: float,
     show_quality_report: bool,
+    provider: str,
 ):
     """Generate synthetic training data for SKS codes"""
     logger.info("Starting synthetic data generation")
@@ -89,11 +97,39 @@ def main(
     # Load config
     config = Config()
 
-    # Validate API key is set
+    # Determine which provider to use
+    provider_type = provider if provider else config.llm_provider
+    provider_type = provider_type.lower()
+    logger.info(f"Using LLM provider: {provider_type}")
+
+    # Validate required settings based on provider
     try:
-        config.validate_api_key("anthropic_api_key")
+        if provider_type == "claude":
+            config.validate_api_key("anthropic_api_key")
+        elif provider_type == "ollama":
+            if not config.ollama_base_url:
+                raise ValueError("OLLAMA_BASE_URL is not set in config")
+            if not config.ollama_model:
+                raise ValueError("OLLAMA_MODEL is not set in config")
+        else:
+            raise ValueError(f"Unknown provider: {provider_type}. Must be 'claude' or 'ollama'")
     except ValueError as e:
         logger.error(str(e))
+        sys.exit(1)
+
+    # Create LLM provider
+    try:
+        llm_provider = create_provider(
+            provider_type=provider_type,
+            anthropic_api_key=config.anthropic_api_key,
+            claude_model=config.claude_model,
+            ollama_base_url=config.ollama_base_url,
+            ollama_model=config.ollama_model,
+            ollama_timeout=config.ollama_timeout,
+        )
+        logger.info(f"Initialized provider: {llm_provider.get_model_name()}")
+    except Exception as e:
+        logger.error(f"Failed to initialize LLM provider: {e}")
         sys.exit(1)
 
     # Setup checkpoint file path
@@ -169,7 +205,7 @@ def main(
         )
 
     # Generate dataset
-    generator = SyntheticDataGenerator(api_key=config.anthropic_api_key)
+    generator = SyntheticDataGenerator(provider=llm_provider)
     dataset = generator.generate_dataset(
         codes=codes,
         examples_per_code=examples_per_code,

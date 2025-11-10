@@ -19,6 +19,19 @@ class Config:
     openai_api_key: str = field(default_factory=lambda: os.getenv("OPENAI_API_KEY", ""))
     wandb_api_key: str = field(default_factory=lambda: os.getenv("WANDB_API_KEY", ""))
 
+    # LLM Provider settings
+    llm_provider: str = field(default_factory=lambda: os.getenv("LLM_PROVIDER", "claude"))
+    claude_model: str = field(
+        default_factory=lambda: os.getenv("CLAUDE_MODEL", "claude-sonnet-4-20250514")
+    )
+    ollama_base_url: str = field(
+        default_factory=lambda: os.getenv("OLLAMA_BASE_URL", "https://ollama:11434")
+    )
+    ollama_model: str = field(default_factory=lambda: os.getenv("OLLAMA_MODEL", "llama3.3"))
+    ollama_timeout: int = field(
+        default_factory=lambda: int(os.getenv("OLLAMA_TIMEOUT", "120"))
+    )
+
     # Project settings
     wandb_project: str = field(default_factory=lambda: os.getenv("WANDB_PROJECT", "skstuner"))
     wandb_entity: Optional[str] = field(default_factory=lambda: os.getenv("WANDB_ENTITY"))
